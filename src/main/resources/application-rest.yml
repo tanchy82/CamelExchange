@@ -1,0 +1,15 @@
+host: localhost
+port: 7777
+context: /camel
+property: connectTimeout:5
+routes:
+  - from: /his
+    from_method: post
+    to: localhost:8282/demo222
+    to_method: post
+    exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean
+  - from: /his2
+    from_method: post
+    to: localhost:8282/demo222
+    to_method: post
+    exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean
