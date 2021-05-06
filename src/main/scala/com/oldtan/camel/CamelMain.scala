@@ -23,20 +23,18 @@ object CamelMain extends App {
       config.property.trim.split(",").toStream.map(s => s.split(":")).foreach(
         s => proList.add(new RestPropertyDefinition(s(0), s(1))))
       restConfiguration().component("netty-http").host(config.host).port(config.port)
-        .contextPath(config.context).bindingMode(RestBindingMode.auto).setComponentProperties(proList)
+        .bindingMode(RestBindingMode.auto).setComponentProperties(proList)
       config.routes.stream.forEach(r => {
         val direct = s"direct:${r.get("from")}"
-        rest(r.get("from")).verb(r.get("from_method")).to(direct)
+        rest(r.get("from")).verb(r.get("from_method")).toD(direct)
         val exchangeBean = Class.forName(r.get("exchange_bean")).newInstance.asInstanceOf[DefaultExchangeBean]
         from(direct).process(new Processor {
           override def process(exchange: Exchange) = {
             exchange.getIn.setHeader(Exchange.HTTP_METHOD, new HttpMethod(s"${r.get("to_method")}".toUpperCase))
-            // TODO
             exchangeBean.requestExchange(exchange)
           }
-        }).to(s"netty-http:${r.get("to")}").process(new Processor {
+        }).toD(s"netty-http:${r.get("to")}").process(new Processor {
           override def process(exchange: Exchange) = {
-            // TODO
             exchangeBean.responseExchange(exchange)
           }
         })

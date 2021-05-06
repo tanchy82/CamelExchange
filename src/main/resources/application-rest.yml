@@ -1,6 +1,5 @@
 host: localhost
 port: 7777
-context: /camel
 property: connectTimeout:5
 routes:
   - from: /his
@@ -8,8 +7,11 @@ routes:
     to: localhost:8282/demo222
     to_method: post
     exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean
-  - from: /his2
+
+  ## If you set to uri contain path variable，then you set follow the below
+  #  actual to uri is:  http://localhost:8282/demo222/{id}
+  - from: /demo222/{id}
     from_method: post
-    to: localhost:8282/demo222
+    to: localhost:8282
     to_method: post
     exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean

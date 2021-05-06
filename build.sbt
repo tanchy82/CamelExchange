@@ -20,7 +20,10 @@ libraryDependencies ++= Seq(
 
   "org.yaml" % "snakeyaml" % "1.28",
 
-  "org.slf4j" % "slf4j-log4j12" % "2.0.0-alpha1" % Test
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.12.3",
+
+
+"org.slf4j" % "slf4j-log4j12" % "2.0.0-alpha1" % Test
 )
 
 mainClass in assembly := Some("com.oldtan.camel.CamelMain")
