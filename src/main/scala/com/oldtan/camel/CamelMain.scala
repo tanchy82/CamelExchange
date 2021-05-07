@@ -18,7 +18,7 @@ import scala.util.Failure
 
 object CamelMain extends App {
   val camel = new DefaultCamelContext
-  val config: RestConfig = new Yaml(new Constructor(classOf[RestConfig]))
+  val config = new Yaml(new Constructor(classOf[RestConfig]))
     .load(Source.fromResource("application-rest.yml").bufferedReader).asInstanceOf[RestConfig]
   camel.addRoutes(new RouteBuilder {
     override def configure = {
