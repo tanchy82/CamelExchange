@@ -11,7 +11,10 @@ import org.apache.camel.{Exchange, Processor}
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.constructor.Constructor
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.io.Source
+import scala.util.Failure
 
 object CamelMain extends App {
   val camel = new DefaultCamelContext
@@ -42,11 +45,16 @@ object CamelMain extends App {
     }
   })
   camel.start
-  Thread.sleep(600000)
-  camel.stop
+  Future {
+    while (true) Thread.sleep(5000)
+  }.onComplete {
+    case Failure(e) => println(e.printStackTrace)
+    case _ => camel.stop
+  }
 }
 
 import scala.beans.BeanProperty
+
 class RestConfig extends Serializable {
   @BeanProperty var host: String = _
   @BeanProperty var port: Int = _
