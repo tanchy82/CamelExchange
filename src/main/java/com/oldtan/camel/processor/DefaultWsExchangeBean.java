@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.Exchange;
 
-import java.security.Key;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 
 /**
  * @Description: TODO

@@ -20,12 +20,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.io.Source
 import scala.util.Failure
-import scala.xml.Node
 
 /**
-  * journey representing dive simplify necessary corresponding summarize pros enlist
+  * @Description: Camel Exchange Main Method
+  * @Author: tanchuyue
+  * @Date: 21-4-30
   */
-
 object CamelMain extends App with LazyLogging {
   val camel = new DefaultCamelContext
   val config = new Yaml(new Constructor(classOf[RestConfig]))
@@ -54,7 +54,7 @@ object CamelMain extends App with LazyLogging {
                 exchange.getIn.setHeader(Exchange.CONTENT_TYPE, "text/xml")
 
                 val dataXml = xml.XML.loadString(xmlMapper.writeValueAsString(exchange.getIn.getBody))
-                val soap: Node =
+                val soap =
                   <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
                                     xmlns:gs="http://spring.io/guides/gs-producing-web-service">
                   {dataXml.child}</soapenv:Envelope>
