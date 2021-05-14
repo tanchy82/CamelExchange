@@ -2,11 +2,15 @@ package com.oldtan.camel
 
 import java.util
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator
 import com.oldtan.camel.processor.DefaultExchangeBean
 import com.typesafe.scalalogging.LazyLogging
 import io.netty.handler.codec.http.HttpMethod
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
+import org.apache.camel.model.dataformat.JsonLibrary
 import org.apache.camel.model.rest.{RestBindingMode, RestPropertyDefinition}
 import org.apache.camel.{Exchange, Processor}
 import org.yaml.snakeyaml.Yaml
@@ -16,32 +20,59 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.io.Source
 import scala.util.Failure
+import scala.xml.Node
 
-object CamelMain extends App with LazyLogging{
+/**
+  * journey representing dive simplify necessary corresponding summarize pros enlist
+  */
+
+object CamelMain extends App with LazyLogging {
   val camel = new DefaultCamelContext
   val config = new Yaml(new Constructor(classOf[RestConfig]))
     .load(Source.fromResource("application-rest.yml").bufferedReader).asInstanceOf[RestConfig]
+  val mapper = new ObjectMapper
+  val xmlMapper = new XmlMapper
+  xmlMapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true )
   camel.addRoutes(new RouteBuilder {
     override def configure = {
       val proList = new util.ArrayList[RestPropertyDefinition]
       config.property.trim.split(",").toStream.map(s => s.split(":")).foreach(
         s => proList.add(new RestPropertyDefinition(s(0), s(1))))
-      restConfiguration().component("netty-http").host(config.host).port(config.port)
+      restConfiguration.component("netty-http").host(config.host).port(config.port)
         .bindingMode(RestBindingMode.auto).setComponentProperties(proList)
       config.routes.stream.forEach(r => {
-        val direct = s"direct:${r.get("from")}"
-        rest(r.get("from")).verb(r.get("from_method")).toD(direct)
         val exchangeBean = Class.forName(r.get("exchange_bean")).newInstance.asInstanceOf[DefaultExchangeBean]
-        from(direct).process(new Processor {
+        val toMethod = s"${r.get("to_method")}".toUpperCase
+        val s = rest(r.get("from")).verb(r.get("from_method")).enableCORS(true).route.process(new Processor {
           override def process(exchange: Exchange) = {
-            exchange.getIn.setHeader(Exchange.HTTP_METHOD, new HttpMethod(s"${r.get("to_method")}".toUpperCase))
-            exchangeBean.requestExchange(exchange)
+            val link = exchange.getIn.getBody.asInstanceOf[java.util.LinkedHashMap[String,Object]]
+            exchange.getIn.setBody(mapper.writeValueAsString(link))
+            toMethod match {
+              case "WS" => {
+                exchangeBean.requestExchange(exchange)
+                exchange.getIn.setHeader(Exchange.HTTP_METHOD, HttpMethod.POST)
+                exchange.getIn.setHeader(Exchange.CONTENT_TYPE, "text/xml")
+
+                val dataXml = xml.XML.loadString(xmlMapper.writeValueAsString(exchange.getIn.getBody))
+                val soap: Node =
+                  <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                                    xmlns:gs="http://spring.io/guides/gs-producing-web-service">
+                  {dataXml.child}</soapenv:Envelope>
+                println(soap.toString)
+                exchange.getIn.setBody(soap.toString)
+              }
+              case _ => {
+                exchange.getIn.setHeader(Exchange.HTTP_METHOD, new HttpMethod(toMethod))
+                exchangeBean.requestExchange(exchange)
+              }
+            }
           }
-        }).toD(s"netty-http:${r.get("to")}").process(new Processor {
+        }).to(s"netty-http:${r.get("to")}").process(new Processor {
           override def process(exchange: Exchange) = {
             exchangeBean.responseExchange(exchange)
           }
         })
+        if (toMethod == "WS") s.unmarshal.jacksonxml.marshal.json(JsonLibrary.Jackson) else s.unmarshal.json(JsonLibrary.Jackson)
       })
     }
   })
