@@ -15,6 +15,7 @@ import org.apache.camel.{Exchange, Processor}
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.constructor.Constructor
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.io.Source
@@ -40,32 +41,36 @@ object CamelMain extends App with LazyLogging {
       restConfiguration.component("netty-http").host(config.host).port(config.port)
         .bindingMode(RestBindingMode.auto).setComponentProperties(proList)
       config.routes.stream.forEach(r => {
-        val exchangeBean = Class.forName(r.get("exchange_bean")).newInstance.asInstanceOf[ExchangeBean]
-        val toMethod = s"${r.get("to_method")}".toUpperCase
-        val s = rest(r.get("from")).verb(r.get("from_method")).enableCORS(true).route.process(new Processor {
-          override def process(exchange: Exchange) = {
-            val link = exchange.getIn.getBody.asInstanceOf[java.util.LinkedHashMap[String,Object]]
-            exchange.getIn.setBody(mapper.writeValueAsString(link))
-            toMethod match {
-              case "WS" => {
-                exchangeBean.requestExchange(exchange)
-                exchange.getIn.setHeader(Exchange.HTTP_METHOD, HttpMethod.POST)
-                exchange.getIn.setHeader(Exchange.CONTENT_TYPE, "text/xml")
-                val dataXml = xml.XML.loadString(xmlMapper.writeValueAsString(exchange.getIn.getBody))
-                val soap = <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:gs="http://spring.io/guides/gs-producing-web-service">
-                  {dataXml.child}</soapenv:Envelope>
-                exchange.getIn.setBody(soap.toString)
-              }
-              case _ => {
-                exchange.getIn.setHeader(Exchange.HTTP_METHOD, new HttpMethod(toMethod))
-                exchangeBean.requestExchange(exchange)
-              }
-            }
-          }
-        }).to(s"netty-http:${r.get("to")}").process(new Processor {
-          override def process(exchange: Exchange) = exchangeBean.responseExchange(exchange)
-        })
-        if (toMethod == "WS") s.unmarshal.jacksonxml.marshal.json(JsonLibrary.Jackson) else s.unmarshal.json(JsonLibrary.Jackson)
+        val methods = new mutable.Queue[String] ++= s"${r.get("to_method")}".toUpperCase.split(",")
+        val beans = new mutable.Queue[String] ++= r.get("exchange_bean").split(",")
+        val toUri = r.get("to").split(",")
+        val s = rest(r.get("from")).verb(r.get("from_method")).enableCORS(true).route
+        toUri.foreach(u => {
+          val exchangeBean = Class.forName(beans.dequeue).newInstance.asInstanceOf[ExchangeBean]
+          val toMethod = methods.dequeue
+               s.process(new Processor {
+                 override def process(exchange: Exchange) = {
+                   exchange.getIn.setBody(mapper.writeValueAsString(
+                     exchange.getIn.getBody.asInstanceOf[java.util.LinkedHashMap[String,Object]]))
+                   toMethod match {
+                     case "WS" => {
+                       exchangeBean.requestExchange(exchange)
+                       exchange.getIn.setHeader(Exchange.HTTP_METHOD, HttpMethod.POST)
+                       exchange.getIn.setHeader(Exchange.CONTENT_TYPE, "text/xml")
+                       val dataXml = xml.XML.loadString(xmlMapper.writeValueAsString(exchange.getIn.getBody))
+                       val soap = <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:gs="http://spring.io/guides/gs-producing-web-service">
+                         {dataXml.child}</soapenv:Envelope>
+                       exchange.getIn.setBody(soap.toString)}
+                     case _ => {
+                       exchange.getIn.setHeader(Exchange.HTTP_METHOD, new HttpMethod(toMethod))
+                       exchangeBean.requestExchange(exchange)}
+                   }
+                 }
+               }).to(s"netty-http:$u").process(new Processor {
+                 override def process(exchange: Exchange) = exchangeBean.responseExchange(exchange)
+               })
+            if (toMethod == "WS") s.unmarshal.jacksonxml.marshal.json(JsonLibrary.Jackson) else s.unmarshal.json(JsonLibrary.Jackson)
+          })
       })
     }
   })
