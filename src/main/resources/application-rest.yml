@@ -4,7 +4,7 @@ property: connectTimeout:5,compression:true
 routes:
   - from: /his
     from_method: post
-    to: localhost:8282/demo222
+    to: localhost:8282/demo
     to_method: post
     exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean
 
