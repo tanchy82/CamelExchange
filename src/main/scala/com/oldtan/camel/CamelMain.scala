@@ -5,7 +5,6 @@ import java.util
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator
-import com.oldtan.camel.processor.DefaultExchangeBean
 import com.typesafe.scalalogging.LazyLogging
 import io.netty.handler.codec.http.HttpMethod
 import org.apache.camel.builder.RouteBuilder
@@ -41,7 +40,7 @@ object CamelMain extends App with LazyLogging {
       restConfiguration.component("netty-http").host(config.host).port(config.port)
         .bindingMode(RestBindingMode.auto).setComponentProperties(proList)
       config.routes.stream.forEach(r => {
-        val exchangeBean = Class.forName(r.get("exchange_bean")).newInstance.asInstanceOf[DefaultExchangeBean]
+        val exchangeBean = Class.forName(r.get("exchange_bean")).newInstance.asInstanceOf[ExchangeBean]
         val toMethod = s"${r.get("to_method")}".toUpperCase
         val s = rest(r.get("from")).verb(r.get("from_method")).enableCORS(true).route.process(new Processor {
           override def process(exchange: Exchange) = {
@@ -52,13 +51,9 @@ object CamelMain extends App with LazyLogging {
                 exchangeBean.requestExchange(exchange)
                 exchange.getIn.setHeader(Exchange.HTTP_METHOD, HttpMethod.POST)
                 exchange.getIn.setHeader(Exchange.CONTENT_TYPE, "text/xml")
-
                 val dataXml = xml.XML.loadString(xmlMapper.writeValueAsString(exchange.getIn.getBody))
-                val soap =
-                  <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-                                    xmlns:gs="http://spring.io/guides/gs-producing-web-service">
+                val soap = <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:gs="http://spring.io/guides/gs-producing-web-service">
                   {dataXml.child}</soapenv:Envelope>
-                println(soap.toString)
                 exchange.getIn.setBody(soap.toString)
               }
               case _ => {
@@ -68,9 +63,7 @@ object CamelMain extends App with LazyLogging {
             }
           }
         }).to(s"netty-http:${r.get("to")}").process(new Processor {
-          override def process(exchange: Exchange) = {
-            exchangeBean.responseExchange(exchange)
-          }
+          override def process(exchange: Exchange) = exchangeBean.responseExchange(exchange)
         })
         if (toMethod == "WS") s.unmarshal.jacksonxml.marshal.json(JsonLibrary.Jackson) else s.unmarshal.json(JsonLibrary.Jackson)
       })
@@ -94,4 +87,9 @@ class RestConfig extends Serializable {
   @BeanProperty var context: String = _
   @BeanProperty var property: String = _
   @BeanProperty var routes: util.List[util.HashMap[String, String]] = _
+}
+
+trait ExchangeBean{
+  def requestExchange(e: Exchange)
+  def responseExchange(e:Exchange)
 }
