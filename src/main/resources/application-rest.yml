@@ -10,6 +10,8 @@ routes:
 
   ## If you set to uri contain path variable，then set follow the below
   #  destination endpoint uri is:  http://localhost:8282/demo222/{id}
+  ## If you set more uri sort, then set follow the below
+  #  set to/to_method/exchange_bean properties sort by slip ','
   - from: /demo222/{id}
     from_method: post
     to: localhost:8282,localhost:8282/demo
