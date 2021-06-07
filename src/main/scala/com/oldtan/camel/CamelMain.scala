@@ -32,7 +32,7 @@ object CamelMain extends App with LazyLogging {
     .load(Source.fromResource("application-rest.yml").bufferedReader).asInstanceOf[RestConfig]
   val mapper = new ObjectMapper
   val xmlMapper = new XmlMapper
-  xmlMapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true )
+  xmlMapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true)
   camel.addRoutes(new RouteBuilder {
     override def configure = {
       val proList = new util.ArrayList[RestPropertyDefinition]
@@ -48,29 +48,32 @@ object CamelMain extends App with LazyLogging {
         toUri.foreach(u => {
           val exchangeBean = Class.forName(beans.dequeue).newInstance.asInstanceOf[ExchangeBean]
           val toMethod = methods.dequeue
-               s.process(new Processor {
-                 override def process(exchange: Exchange) = {
-                   exchange.getIn.setBody(mapper.writeValueAsString(
-                     exchange.getIn.getBody.asInstanceOf[java.util.LinkedHashMap[String,Object]]))
-                   toMethod match {
-                     case "WS" => {
-                       exchangeBean.requestExchange(exchange)
-                       exchange.getIn.setHeader(Exchange.HTTP_METHOD, HttpMethod.POST)
-                       exchange.getIn.setHeader(Exchange.CONTENT_TYPE, "text/xml")
-                       val dataXml = xml.XML.loadString(xmlMapper.writeValueAsString(exchange.getIn.getBody))
-                       val soap = <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:gs="http://spring.io/guides/gs-producing-web-service">
-                         {dataXml.child}</soapenv:Envelope>
-                       exchange.getIn.setBody(soap.toString)}
-                     case _ => {
-                       exchange.getIn.setHeader(Exchange.HTTP_METHOD, new HttpMethod(toMethod))
-                       exchangeBean.requestExchange(exchange)}
-                   }
-                 }
-               }).to(s"netty-http:$u").process(new Processor {
-                 override def process(exchange: Exchange) = exchangeBean.responseExchange(exchange)
-               })
-            if (toMethod == "WS") s.unmarshal.jacksonxml.marshal.json(JsonLibrary.Jackson) else s.unmarshal.json(JsonLibrary.Jackson)
+          s.process(new Processor {
+            override def process(exchange: Exchange) = {
+              exchange.getIn.setBody(mapper.writeValueAsString(
+                exchange.getIn.getBody.asInstanceOf[java.util.LinkedHashMap[String, Object]]))
+              toMethod match {
+                case "WS" => {
+                  exchangeBean.requestExchange(exchange)
+                  exchange.getIn.setHeader(Exchange.HTTP_METHOD, HttpMethod.POST)
+                  exchange.getIn.setHeader(Exchange.CONTENT_TYPE, "text/xml")
+                  val dataXml = xml.XML.loadString(xmlMapper.writeValueAsString(exchange.getIn.getBody))
+                  val soap = <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:gs="http://spring.io/guides/gs-producing-web-service">
+                    {dataXml.child}
+                  </soapenv:Envelope>
+                  exchange.getIn.setBody(soap.toString)
+                }
+                case _ => {
+                  exchange.getIn.setHeader(Exchange.HTTP_METHOD, new HttpMethod(toMethod))
+                  exchangeBean.requestExchange(exchange)
+                }
+              }
+            }
+          }).to(s"netty-http:$u").process(new Processor {
+            override def process(exchange: Exchange) = exchangeBean.responseExchange(exchange)
           })
+          if (toMethod == "WS") s.unmarshal.jacksonxml.marshal.json(JsonLibrary.Jackson) else s.unmarshal.json(JsonLibrary.Jackson)
+        })
       })
     }
   })
@@ -94,7 +97,8 @@ class RestConfig extends Serializable {
   @BeanProperty var routes: util.List[util.HashMap[String, String]] = _
 }
 
-trait ExchangeBean{
+trait ExchangeBean {
   def requestExchange(e: Exchange)
-  def responseExchange(e:Exchange)
+
+  def responseExchange(e: Exchange)
 }

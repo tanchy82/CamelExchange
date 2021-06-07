@@ -7,7 +7,6 @@ routes:
     to: localhost:8282/demo
     to_method: post
     exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean
-
   ## If you set to uri contain path variable，then set follow the below
   #  destination endpoint uri is:  http://localhost:8282/demo222/{id}
   ## If you set more uri sort, then set follow the below
@@ -17,7 +16,6 @@ routes:
     to: localhost:8282,localhost:8282/demo
     to_method: post,post
     exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean,com.oldtan.camel.processor.DefaultExchangeBean
-
   ## If destination endpoint is web SOAP service, then set to_method attributes value 'ws'
   - from: /tows
     from_method: post
