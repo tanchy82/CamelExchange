@@ -4,6 +4,7 @@ property: connectTimeout:5,compression:true
 routes:
   - from: /his
     from_method: post
+    model: Serial    # model have Serial、choice two route running model,default model is Serial
     to: localhost:8282/demo
     to_method: post
     exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean
@@ -13,12 +14,22 @@ routes:
   #  set to/to_method/exchange_bean properties sort by slip ','
   - from: /demo222/{id}
     from_method: post
+    model: Serial
     to: localhost:8282,localhost:8282/demo
     to_method: post,post
     exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean,com.oldtan.camel.processor.DefaultExchangeBean
   ## If destination endpoint is web SOAP service, then set to_method attributes value 'ws'
   - from: /tows
     from_method: post
+    model: Serial
     to: localhost:8080/ws
     to_method: ws
     exchange_bean: com.oldtan.camel.processor.DefaultWsExchangeBean
+  ## choice route running model demo
+  ## must implements trait ExchangeBean choice method, set header 'camelChoice' value by 'to' value index
+  - from: /choice
+    from_method: post
+    model: choice
+    to: localhost:8282/choice1,localhost:8282/choice2
+    to_method: post,post
+    exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean,com.oldtan.camel.processor.DefaultExchangeBean

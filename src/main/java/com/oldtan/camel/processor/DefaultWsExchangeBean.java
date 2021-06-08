@@ -44,4 +44,5 @@ public class DefaultWsExchangeBean implements ExchangeBean {
     public void responseExchange(Exchange exchange){
 
     }
+
 }

@@ -57,4 +57,8 @@ public class DefaultExchangeBean implements ExchangeBean {
 
     }
 
+    @Override
+    public void choice(Exchange exchange){
+        exchange.getMessage().setHeader("camelChoice","2");
+    }
 }
