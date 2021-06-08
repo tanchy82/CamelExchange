@@ -35,18 +35,15 @@ object CamelMain extends App with LazyLogging {
   val xmlMapper = new XmlMapper
   xmlMapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true)
 
-  implicit def aa(r: AnyRef) = {
-    if (r.isInstanceOf[ChoiceDefinition])
-      r.asInstanceOf[ChoiceDefinition]
-    else
-      r.asInstanceOf[RouteDefinition]
+  implicit def aa(r: AnyRef) = r match {
+    case o: ChoiceDefinition => o.asInstanceOf[ChoiceDefinition]
+    case o: RouteDefinition => o.asInstanceOf[RouteDefinition]
   }
 
   def addSingleRoute(rDef: AnyRef, toUri: String, toMethod: String, exchangeBean: ExchangeBean) = {
     rDef.process(new Processor {
       override def process(exchange: Exchange) = {
-        exchange.getIn.setBody(mapper.writeValueAsString(
-          exchange.getIn.getBody.asInstanceOf[util.LinkedHashMap[String, Object]]))
+        exchange.getIn.setBody(mapper.writeValueAsString(exchange.getIn.getBody.asInstanceOf[util.LinkedHashMap[String, Object]]))
         toMethod match {
           case "WS" => {
             exchangeBean.requestExchange(exchange)
