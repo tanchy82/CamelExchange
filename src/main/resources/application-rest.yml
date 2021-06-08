@@ -18,10 +18,11 @@ routes:
     to: localhost:8282,localhost:8282/demo
     to_method: post,post
     exchange_bean: com.oldtan.camel.processor.DefaultExchangeBean,com.oldtan.camel.processor.DefaultExchangeBean
-  ## If destination endpoint is web SOAP service, then set to_method attributes value 'ws'
+  ## If destination endpoint is web SOAP service, then set to_method attributes value 'ws' and must have 'namespace'
   - from: /tows
     from_method: post
     model: Serial
+    namespace: xmlns:gs=http://spring.io/guides/gs-producing-web-service
     to: localhost:8080/ws
     to_method: ws
     exchange_bean: com.oldtan.camel.processor.DefaultWsExchangeBean
