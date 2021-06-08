@@ -35,17 +35,18 @@ object CamelMain extends App with LazyLogging {
   val xmlMapper = new XmlMapper
   xmlMapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true)
 
-  implicit def aa(r:AnyRef) = {
+  implicit def aa(r: AnyRef) = {
     if (r.isInstanceOf[ChoiceDefinition])
       r.asInstanceOf[ChoiceDefinition]
     else
       r.asInstanceOf[RouteDefinition]
   }
+
   def addSingleRoute(rDef: AnyRef, toUri: String, toMethod: String, exchangeBean: ExchangeBean) = {
     rDef.process(new Processor {
       override def process(exchange: Exchange) = {
         exchange.getIn.setBody(mapper.writeValueAsString(
-          exchange.getIn.getBody.asInstanceOf[java.util.LinkedHashMap[String, Object]]))
+          exchange.getIn.getBody.asInstanceOf[util.LinkedHashMap[String, Object]]))
         toMethod match {
           case "WS" => {
             exchangeBean.requestExchange(exchange)
@@ -90,8 +91,8 @@ object CamelMain extends App with LazyLogging {
             })
             val c = s.choice
             (1 to toUri.length).foreach(i => {
-              if(i > 1) ex = Class.forName(beans.dequeue).newInstance.asInstanceOf[ExchangeBean]
-              addSingleRoute(c.when(simple("${header.camelChoice} == '" + i +"'")), toUri(i-1), methods.dequeue, ex)
+              if (i > 1) ex = Class.forName(beans.dequeue).newInstance.asInstanceOf[ExchangeBean]
+              addSingleRoute(c.when(simple("${header.camelChoice} == '" + i + "'")), toUri(i - 1), methods.dequeue, ex)
             })
             c.endChoice
           }
@@ -123,6 +124,8 @@ class RestConfig extends Serializable {
 
 trait ExchangeBean {
   def requestExchange(e: Exchange)
+
   def responseExchange(e: Exchange)
-  def choice(e: Exchange){}
+
+  def choice(e: Exchange) {}
 }
