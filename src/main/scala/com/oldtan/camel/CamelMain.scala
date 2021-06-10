@@ -9,9 +9,9 @@ import com.typesafe.scalalogging.LazyLogging
 import io.netty.handler.codec.http.HttpMethod
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
-import org.apache.camel.model.{ChoiceDefinition, ProcessorDefinition, RouteDefinition}
 import org.apache.camel.model.dataformat.JsonLibrary
 import org.apache.camel.model.rest.{RestBindingMode, RestPropertyDefinition}
+import org.apache.camel.model.{ChoiceDefinition, RouteDefinition}
 import org.apache.camel.{Exchange, Processor}
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.constructor.Constructor
@@ -41,7 +41,7 @@ object CamelMain extends App with LazyLogging {
     case o: RouteDefinition => o.asInstanceOf[RouteDefinition]
   }
 
-  def addSingleRoute(rDef: AnyRef, toUri: String, toMethod: String, bean: ExchangeBean, namespace:String) = {
+  def addSingleRoute(rDef: AnyRef, toUri: String, toMethod: String, bean: ExchangeBean, namespace: String) = {
     rDef.process(new Processor {
       override def process(exchange: Exchange) = {
         exchange.getIn.setBody(mapper.writeValueAsString(exchange.getIn.getBody.asInstanceOf[util.LinkedHashMap[String, Object]]))
@@ -51,10 +51,8 @@ object CamelMain extends App with LazyLogging {
             exchange.getIn.setHeader(Exchange.HTTP_METHOD, HttpMethod.POST)
             exchange.getIn.setHeader(Exchange.CONTENT_TYPE, "text/xml")
             val dataXml = xml.XML.loadString(xmlMapper.writeValueAsString(exchange.getIn.getBody))
-            val soap = <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-              {dataXml.child}
-            </soapenv:Envelope>
-            exchange.getIn.setBody((soap%Attribute(null,namespace.split("=")(0),namespace.split("=")(1),Null)).toString)
+            val soap = <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">{dataXml.child}</soapenv:Envelope>
+            exchange.getIn.setBody((soap % Attribute(null, namespace.split("=")(0), namespace.split("=")(1), Null)).toString)
           }
           case _ => {
             exchange.getIn.setHeader(Exchange.HTTP_METHOD, new HttpMethod(toMethod))
@@ -111,21 +109,18 @@ object CamelMain extends App with LazyLogging {
 }
 
 import scala.beans.BeanProperty
-
 class RestConfig extends Serializable {
   @BeanProperty var host: String = _
   @BeanProperty var port: Int = _
   @BeanProperty var context: String = _
   @BeanProperty var property: String = _
   @BeanProperty var model: String = _
-  @BeanProperty var namespace:String = _
+  @BeanProperty var namespace: String = _
   @BeanProperty var routes: util.List[util.HashMap[String, String]] = _
 }
 
 trait ExchangeBean {
   def requestExchange(e: Exchange)
-
   def responseExchange(e: Exchange)
-
   def choice(e: Exchange) {}
 }
