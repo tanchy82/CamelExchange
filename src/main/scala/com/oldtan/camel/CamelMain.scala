@@ -35,7 +35,6 @@ object CamelMain extends App with LazyLogging {
   val mapper = new ObjectMapper
   val xmlMapper = new XmlMapper
   xmlMapper.configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true)
-
   implicit def aa(r: AnyRef) = r match {
     case o: ChoiceDefinition => o.asInstanceOf[ChoiceDefinition]
     case o: RouteDefinition => o.asInstanceOf[RouteDefinition]
