@@ -7,6 +7,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator
 import com.typesafe.scalalogging.LazyLogging
 import io.netty.handler.codec.http.HttpMethod
+import org.apache.camel.api.management.ManagedCamelContext
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.model.dataformat.JsonLibrary
@@ -41,8 +42,7 @@ object CamelMain extends App with LazyLogging {
   }
 
   def addSingleRoute(rDef: AnyRef, toUri: String, toMethod: String, bean: ExchangeBean, namespace: String) = {
-    rDef.process(new Processor {
-      override def process(exchange: Exchange) = {
+    rDef.process(exchange => {
         exchange.getIn.setBody(mapper.writeValueAsString(exchange.getIn.getBody.asInstanceOf[util.LinkedHashMap[String, Object]]))
         toMethod match {
           case "WS" => {
@@ -58,7 +58,6 @@ object CamelMain extends App with LazyLogging {
             bean.requestExchange(exchange)
           }
         }
-      }
     }).to(s"netty-http:$toUri").process(new Processor {
       override def process(exchange: Exchange) = bean.responseExchange(exchange)
     })
@@ -82,9 +81,7 @@ object CamelMain extends App with LazyLogging {
         model match {
           case "choice" => {
             var ex = Class.forName(beans.dequeue).newInstance.asInstanceOf[ExchangeBean]
-            s.process(new Processor {
-              override def process(e: Exchange): Unit = ex.choice(e)
-            })
+            s.process(e => ex choice e)
             val c = s.choice
             (1 to toUri.length).foreach(i => {
               if (i > 1) ex = Class.forName(beans.dequeue).newInstance.asInstanceOf[ExchangeBean]
@@ -97,6 +94,7 @@ object CamelMain extends App with LazyLogging {
       })
     }
   })
+  camel.setTypeConverterStatisticsEnabled(true)
   camel.start
   logger.info("Camel exchange service start ...")
   Future {

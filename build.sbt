@@ -8,11 +8,12 @@ libraryDependencies ++= Seq(
 
   "org.apache.camel" % "camel-core" % "3.9.0",
 
+  "org.apache.camel" % "camel-management" % "3.9.0",
+
   "org.apache.camel" % "camel-netty-http" % "3.9.0",
 
   "org.apache.camel" % "camel-jaxb" % "3.9.0",
 
-  //"org.apache.camel" % "camel-undertow" % "3.9.0",
   "org.apache.camel" % "camel-xmljson" % "2.23.4",
 
   "xom" % "xom" % "1.3.7",
@@ -33,7 +34,7 @@ libraryDependencies ++= Seq(
 
   "org.scala-lang" % "scala-library" % "2.12.7",
 
-  "org.scala-lang.modules" %% "scala-xml" % "1.3.0"
+  "org.scala-lang.modules" %% "scala-xml" % "1.3.0",
 
 )
 
